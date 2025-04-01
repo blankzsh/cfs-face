@@ -4,7 +4,8 @@
   "description": "A macOS-style photo gallery app",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "build":"pnpm build"
   },
   "dependencies": {
     "ejs": "^3.1.10",
