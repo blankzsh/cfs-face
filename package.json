@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "build":"pnpm build"
+    "build": "pnpm install && pnpm run compile-assets"
   },
   "dependencies": {
     "ejs": "^3.1.10",
