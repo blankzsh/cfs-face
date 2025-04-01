@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Photos Gallery</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="shortcut icon" href="https://api.beof.cn/favicon.ico" type="image/x-icon">
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="window-controls">
+        <div class="control close"></div>
+        <div class="control minimize"></div>
+        <div class="control maximize"></div>
+      </div>
+      <div class="title">CFS Player Photos Gallery</div>
+    </div>
+    
+    <div class="toolbar">
+      <form class="search-form" action="/" method="GET">
+        <div class="search-container">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" name="search" placeholder="Search photos..." value="<%= search %>" class="search-input">
+          <% if (search) { %>
+            <a href="/" class="clear-search">×</a>
+          <% } %>
+        </div>
+        <input type="hidden" name="page" value="1">
+        <input type="hidden" name="sort" value="<%= sortOrder %>">
+      </form>
+      
+      <div class="sort-options">
+        <span>Sort: </span>
+        <a href="/?page=1&search=<%= search %>&sort=natural-asc" class="sort-btn <%= sortOrder === 'natural-asc' ? 'active' : '' %>">1→10</a>
+        <a href="/?page=1&search=<%= search %>&sort=natural-desc" class="sort-btn <%= sortOrder === 'natural-desc' ? 'active' : '' %>">10→1</a>
+        <a href="/?page=1&search=<%= search %>&sort=filename-asc" class="sort-btn <%= sortOrder === 'filename-asc' ? 'active' : '' %>">A→Z</a>
+        <a href="/?page=1&search=<%= search %>&sort=filename-desc" class="sort-btn <%= sortOrder === 'filename-desc' ? 'active' : '' %>">Z→A</a>
+      </div>
+    </div>
+    
+    <div class="gallery-container">
+      <% if (images.length === 0) { %>
+        <div class="no-results">
+          <p>No photos found. Try a different search term.</p>
+        </div>
+      <% } else { %>
+        <div class="gallery">
+          <% images.forEach(image => { %>
+            <div class="photo-item" data-src="<%= image.path %>" data-filename="<%= image.filename %>">
+              <div class="photo-container loading">
+                <img src="<%= image.path %>" alt="<%= image.filename %>" loading="lazy" onload="this.parentElement.classList.remove('loading')">
+              </div>
+              <div class="photo-info">
+                <span class="photo-order">#<%= image.order %></span>
+                <span class="photo-name"><%= image.filename %></span>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+    
+    <div class="pagination">
+      <% if (currentPage > 1) { %>
+        <a href="/?page=<%= currentPage - 1 %>&search=<%= search %>&sort=<%= sortOrder %>" class="pagination-btn prev">Previous</a>
+      <% } else { %>
+        <span class="pagination-btn prev disabled">Previous</span>
+      <% } %>
+      
+      <span class="page-info">Page <%= currentPage %> of <%= totalPages || 1 %></span>
+      
+      <% if (currentPage < totalPages) { %>
+        <a href="/?page=<%= currentPage + 1 %>&search=<%= search %>&sort=<%= sortOrder %>" class="pagination-btn next">Next</a>
+      <% } else { %>
+        <span class="pagination-btn next disabled">Next</span>
+      <% } %>
+    </div>
+  </div>
+  
+  <!-- Image Preview Modal -->
+  <div id="imageModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h3 id="modalImageTitle"></h3>
+      <img id="modalImage" src="" alt="">
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Modal functionality
+      const modal = document.getElementById('imageModal');
+      const modalImg = document.getElementById('modalImage');
+      const modalTitle = document.getElementById('modalImageTitle');
+      const closeBtn = document.getElementsByClassName('close-modal')[0];
+      
+      // Add click event to all photo items
+      const photoItems = document.querySelectorAll('.photo-item');
+      photoItems.forEach(item => {
+        item.addEventListener('click', function() {
+          modal.style.display = 'flex';
+          const src = this.getAttribute('data-src');
+          modalImg.src = src;
+          modalTitle.textContent = this.getAttribute('data-filename');
+          
+          // Add loading animation for modal image
+          modalImg.classList.add('loading');
+          modalImg.onload = function() {
+            this.classList.remove('loading');
+          };
+        });
+      });
+      
+      // Close the modal when clicking the close button
+      closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+      });
+      
+      // Close the modal when clicking outside the content
+      window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+      
+      // Search functionality
+      const searchInput = document.querySelector('.search-input');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            document.querySelector('.search-form').submit();
+          }
+        });
+      }
+      
+      // Preload next page images - FIXED: Using an array to avoid redeclaring 'img' variable
+      <% if (nextPageImages && nextPageImages.length > 0) { %>
+        const preloadImages = () => {
+          const preloadedImages = [];
+          <% nextPageImages.forEach(image => { %>
+            preloadedImages.push(new Image().src = "<%= image.path %>");
+          <% }); %>
+        };
+        
+        // Preload after the current page is loaded
+        window.addEventListener('load', preloadImages);
+      <% } %>
+      
+      // Add keyboard navigation
+      document.addEventListener('keydown', function(e) {
+        // ESC key closes modal
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+          modal.style.display = 'none';
+        }
+        
+        // Arrow keys for pagination
+        if (e.key === 'ArrowLeft') {
+          const prevBtn = document.querySelector('.pagination-btn.prev');
+          if (prevBtn && !prevBtn.classList.contains('disabled')) {
+            window.location.href = prevBtn.getAttribute('href');
+          }
+        }
+        
+        if (e.key === 'ArrowRight') {
+          const nextBtn = document.querySelector('.pagination-btn.next');
+          if (nextBtn && !nextBtn.classList.contains('disabled')) {
+            window.location.href = nextBtn.getAttribute('href');
+          }
+        }
+      });
+      
+      // Improved image loading with intersection observer
+      if ('IntersectionObserver' in window) {
+        const imgObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target.querySelector('img');
+              if (img.dataset.src) {
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+              }
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { rootMargin: '200px 0px' });
+        
+        photoItems.forEach(item => {
+          imgObserver.observe(item);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
+
